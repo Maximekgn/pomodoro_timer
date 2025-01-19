@@ -1,11 +1,17 @@
 import express from "express";
 import ViteExpress from "vite-express";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
 import cors from "cors";
+import fs from "fs/promises";
 import path from "path";
 
+interface Task {
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 const app = express();
+const TASKS_FILE = "tasks.json";
 
 app.use(express.json());
 // Configure CORS with specific options
@@ -16,31 +22,25 @@ app.use(cors({
   credentials: true
 }));
 
-// Initialisation de la base de données
-const dbPromise = open({
-  filename: "tasks.db",
-  driver: sqlite3.Database,
-});
-
-// Création de la table tasks si elle n'existe pas
-async function initDb() {
-  const db = await dbPromise;
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      completed BOOLEAN DEFAULT 0
-    )
-  `);
+// Helper function to read tasks
+async function readTasks(): Promise<Task[]> {
+  try {
+    const data = await fs.readFile(TASKS_FILE, 'utf8');
+    return JSON.parse(data).tasks;
+  } catch (error) {
+    return [];
+  }
 }
 
-initDb().catch(console.error);
+// Helper function to write tasks
+async function writeTasks(tasks: Task[]): Promise<void> {
+  await fs.writeFile(TASKS_FILE, JSON.stringify({ tasks }, null, 2));
+}
 
 // Routes pour les tâches
 app.get("/api/tasks", async (_, res) => {
   try {
-    const db = await dbPromise;
-    const tasks = await db.all("SELECT * FROM tasks ORDER BY id DESC");
+    const tasks = await readTasks();
     res.json(tasks);
   } catch (error) {
     console.error(error);
@@ -55,19 +55,16 @@ app.post("/api/tasks", async (req, res) => {
       return res.status(400).json({ error: "Title is required" });
     }
 
-    const db = await dbPromise;
-    const result = await db.run(
-      "INSERT INTO tasks (title) VALUES (?)",
-      title
-    );
-
-    const task = {
-      id: result.lastID,
+    const tasks = await readTasks();
+    const newTask: Task = {
+      id: tasks.length > 0 ? Math.max(...tasks.map((t: Task) => t.id)) + 1 : 1,
       title,
       completed: false,
     };
 
-    res.status(201).json(task);
+    tasks.unshift(newTask);
+    await writeTasks(tasks);
+    res.json(newTask);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error creating task" });
@@ -79,13 +76,15 @@ app.put("/api/tasks/:id", async (req, res) => {
     const { id } = req.params;
     const { completed } = req.body;
 
-    const db = await dbPromise;
-    await db.run(
-      "UPDATE tasks SET completed = ? WHERE id = ?",
-      completed ? 1 : 0,
-      id
-    );
+    const tasks = await readTasks();
+    const taskIndex = tasks.findIndex((t: Task) => t.id === parseInt(id));
+    
+    if (taskIndex === -1) {
+      return res.status(404).json({ error: "Task not found" });
+    }
 
+    tasks[taskIndex].completed = completed;
+    await writeTasks(tasks);
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -96,8 +95,9 @@ app.put("/api/tasks/:id", async (req, res) => {
 app.delete("/api/tasks/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const db = await dbPromise;
-    await db.run("DELETE FROM tasks WHERE id = ?", id);
+    const tasks = await readTasks();
+    const filteredTasks = tasks.filter((t: Task) => t.id !== parseInt(id));
+    await writeTasks(filteredTasks);
     res.json({ success: true });
   } catch (error) {
     console.error(error);
