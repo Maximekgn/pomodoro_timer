@@ -1,0 +1,11 @@
+[33m0980925[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Refactor task management to use better-sqlite3 for database operations. Updated TaskList component to utilize API functions for task CRUD operations. Added axios and @types/better-sqlite3 as dependencies. Removed tasks.json file and implemented SQLite database for persistent task storage.
+[33m104fcc1[m Update dependencies and enhance server configuration: added @vercel/kv and @upstash/redis to package-lock.json, modified vercel.json for improved routing, and updated main.ts to serve static files and handle all routes in production.
+[33m8601775[m Enhance Vercel and Vite configurations: update vercel-build script to copy index.html to 404.html, add asset caching headers in vercel.json, and configure Vite for asset handling and API proxying.
+[33mfd180bb[m Update build scripts and add Vercel configuration; clear tasks in tasks.json
+[33m99cb66b[m Remove environment configuration files for development and production. Update tasks.json to include a sample task and refactor API_URL in config.ts to an empty string.
+[33m5c19646[m Remove tasks.db file and update TaskList component to use API_URL for fetching tasks. Modify CORS configuration to allow all origins in production and set server port from environment variable.
+[33m7bf35c4[m Clear all tasks from tasks.json, resetting the task list to an empty state.
+[33m752b69d[m Refactor task management to use JSON file storage instead of SQLite. Implemented read and write functions for tasks, updated API routes for task creation, updating, and deletion, and removed database initialization code.
+[33m6903a39[m Enhance task management functionality with improved API interactions and CORS configuration. Added error handling for fetch requests in TaskList component and updated .gitignore to exclude .tasks.db file.
+[33mcd1423e[m Update tasks database with new changes
+[33me1de72f[m first commit
