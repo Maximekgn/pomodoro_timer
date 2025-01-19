@@ -3,7 +3,7 @@ import { Task } from "./types";
 import TaskItem from "./TaskItem";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, ListTodo } from "lucide-react";
-import { API_URL } from "../config";
+import { getTasks, createTask, updateTask, deleteTask } from "../api";
 
 const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -16,17 +16,8 @@ const TaskList = () => {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/tasks`, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setTasks(data);
+      const response = await getTasks();
+      setTasks(response.data);
     } catch (error) {
       console.error("Error fetching tasks:", error);
     } finally {
@@ -37,20 +28,8 @@ const TaskList = () => {
   const addTask = async () => {
     if (newTask.trim()) {
       try {
-        const response = await fetch(`${API_URL}/api/tasks`, {
-          method: "POST",
-          credentials: 'include',
-          headers: {
-            "Content-Type": "application/json",
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ title: newTask }),
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const task = await response.json();
-        setTasks([task, ...tasks]);
+        const response = await createTask(newTask.trim());
+        setTasks([response.data, ...tasks]);
         setNewTask("");
       } catch (error) {
         console.error("Error adding task:", error);
@@ -63,20 +42,7 @@ const TaskList = () => {
       const task = tasks.find((t) => t.id === id);
       if (!task) return;
 
-      const response = await fetch(`${API_URL}/api/tasks/${id}`, {
-        method: "PUT",
-        credentials: 'include',
-        headers: {
-          "Content-Type": "application/json",
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ completed: !task.completed }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      await updateTask(id, !task.completed);
       setTasks(
         tasks.map((t) =>
           t.id === id ? { ...t, completed: !t.completed } : t
@@ -87,20 +53,9 @@ const TaskList = () => {
     }
   };
 
-  const deleteTask = async (id: number) => {
+  const handleDeleteTask = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/api/tasks/${id}`, {
-        method: "DELETE",
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
+      await deleteTask(id);
       setTasks(tasks.filter((t) => t.id !== id));
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -172,7 +127,7 @@ const TaskList = () => {
                 <TaskItem
                   task={task}
                   onToggleComplete={toggleTaskComplete}
-                  onDelete={deleteTask}
+                  onDelete={handleDeleteTask}
                 />
               </motion.div>
             ))}

@@ -1,9 +1,9 @@
 import express from "express";
 import ViteExpress from "vite-express";
 import cors from "cors";
-import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from 'url';
+import Database from 'better-sqlite3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,8 +15,19 @@ interface Task {
 }
 
 const app = express();
-const TASKS_FILE = "tasks.json";
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Initialize SQLite database
+const db = new Database('tasks.db');
+
+// Create tasks table if it doesn't exist
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    completed BOOLEAN DEFAULT 0
+  )
+`);
 
 app.use(express.json());
 // Configure CORS for all origins in production
@@ -33,25 +44,10 @@ if (isProduction) {
   app.use(express.static(distPath));
 }
 
-// Helper function to read tasks
-async function readTasks(): Promise<Task[]> {
-  try {
-    const data = await fs.readFile(TASKS_FILE, 'utf8');
-    return JSON.parse(data).tasks;
-  } catch (error) {
-    return [];
-  }
-}
-
-// Helper function to write tasks
-async function writeTasks(tasks: Task[]): Promise<void> {
-  await fs.writeFile(TASKS_FILE, JSON.stringify({ tasks }, null, 2));
-}
-
 // Routes pour les tâches
-app.get("/api/tasks", async (_, res) => {
+app.get("/api/tasks", (_, res) => {
   try {
-    const tasks = await readTasks();
+    const tasks = db.prepare('SELECT * FROM tasks ORDER BY id DESC').all();
     res.json(tasks);
   } catch (error) {
     console.error(error);
@@ -59,22 +55,15 @@ app.get("/api/tasks", async (_, res) => {
   }
 });
 
-app.post("/api/tasks", async (req, res) => {
+app.post("/api/tasks", (req, res) => {
   try {
     const { title } = req.body;
     if (!title) {
       return res.status(400).json({ error: "Title is required" });
     }
 
-    const tasks = await readTasks();
-    const newTask: Task = {
-      id: tasks.length > 0 ? Math.max(...tasks.map((t: Task) => t.id)) + 1 : 1,
-      title,
-      completed: false,
-    };
-
-    tasks.unshift(newTask);
-    await writeTasks(tasks);
+    const result = db.prepare('INSERT INTO tasks (title, completed) VALUES (?, 0)').run(title);
+    const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
     res.json(newTask);
   } catch (error) {
     console.error(error);
@@ -82,20 +71,17 @@ app.post("/api/tasks", async (req, res) => {
   }
 });
 
-app.put("/api/tasks/:id", async (req, res) => {
+app.put("/api/tasks/:id", (req, res) => {
   try {
     const { id } = req.params;
     const { completed } = req.body;
 
-    const tasks = await readTasks();
-    const taskIndex = tasks.findIndex((t: Task) => t.id === parseInt(id));
+    const result = db.prepare('UPDATE tasks SET completed = ? WHERE id = ?').run(completed ? 1 : 0, id);
     
-    if (taskIndex === -1) {
+    if (result.changes === 0) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    tasks[taskIndex].completed = completed;
-    await writeTasks(tasks);
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -103,12 +89,15 @@ app.put("/api/tasks/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/tasks/:id", async (req, res) => {
+app.delete("/api/tasks/:id", (req, res) => {
   try {
     const { id } = req.params;
-    const tasks = await readTasks();
-    const filteredTasks = tasks.filter((t: Task) => t.id !== parseInt(id));
-    await writeTasks(filteredTasks);
+    const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+    
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error(error);
