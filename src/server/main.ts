@@ -14,9 +14,9 @@ const app = express();
 const TASKS_FILE = "tasks.json";
 
 app.use(express.json());
-// Configure CORS with specific options
+// Configure CORS for all origins in production
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: true, // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type'],
   credentials: true
@@ -105,6 +105,8 @@ app.delete("/api/tasks/:id", async (req, res) => {
   }
 });
 
-ViteExpress.listen(app, 3000, () =>
-  console.log("Server is listening on port 3000...")
+const PORT = parseInt(process.env.PORT || '3000', 10);
+
+ViteExpress.listen(app, PORT, () =>
+  console.log(`Server is listening on port ${PORT}...`)
 );

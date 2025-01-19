@@ -3,6 +3,7 @@ import { Task } from "./types";
 import TaskItem from "./TaskItem";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, ListTodo } from "lucide-react";
+import { API_URL } from "../config";
 
 const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -15,7 +16,7 @@ const TaskList = () => {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/tasks", {
+      const response = await fetch(`${API_URL}/api/tasks`, {
         credentials: 'include',
         headers: {
           'Accept': 'application/json'
@@ -36,7 +37,7 @@ const TaskList = () => {
   const addTask = async () => {
     if (newTask.trim()) {
       try {
-        const response = await fetch("http://localhost:3000/api/tasks", {
+        const response = await fetch(`${API_URL}/api/tasks`, {
           method: "POST",
           credentials: 'include',
           headers: {
@@ -62,7 +63,7 @@ const TaskList = () => {
       const task = tasks.find((t) => t.id === id);
       if (!task) return;
 
-      const response = await fetch(`http://localhost:3000/api/tasks/${id}`, {
+      const response = await fetch(`${API_URL}/api/tasks/${id}`, {
         method: "PUT",
         credentials: 'include',
         headers: {
@@ -88,7 +89,7 @@ const TaskList = () => {
 
   const deleteTask = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/tasks/${id}`, {
+      const response = await fetch(`${API_URL}/api/tasks/${id}`, {
         method: "DELETE",
         credentials: 'include',
         headers: {
