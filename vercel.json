@@ -18,6 +18,10 @@
     {
       "src": "/(.*)",
       "dest": "/dist/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/dist/index.html"
     }
   ]
 } 
