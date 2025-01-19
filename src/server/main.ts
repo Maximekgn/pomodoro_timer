@@ -8,7 +8,13 @@ import path from "path";
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+// Configure CORS with specific options
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type'],
+  credentials: true
+}));
 
 // Initialisation de la base de données
 const dbPromise = open({

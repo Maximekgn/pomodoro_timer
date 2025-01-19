@@ -15,7 +15,15 @@ const TaskList = () => {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/tasks");
+      const response = await fetch("http://localhost:3000/api/tasks", {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setTasks(data);
     } catch (error) {
@@ -30,11 +38,16 @@ const TaskList = () => {
       try {
         const response = await fetch("http://localhost:3000/api/tasks", {
           method: "POST",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
+            'Accept': 'application/json'
           },
           body: JSON.stringify({ title: newTask }),
         });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const task = await response.json();
         setTasks([task, ...tasks]);
         setNewTask("");
@@ -49,13 +62,19 @@ const TaskList = () => {
       const task = tasks.find((t) => t.id === id);
       if (!task) return;
 
-      await fetch(`http://localhost:3000/api/tasks/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/tasks/${id}`, {
         method: "PUT",
+        credentials: 'include',
         headers: {
           "Content-Type": "application/json",
+          'Accept': 'application/json'
         },
         body: JSON.stringify({ completed: !task.completed }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       setTasks(
         tasks.map((t) =>
@@ -69,9 +88,18 @@ const TaskList = () => {
 
   const deleteTask = async (id: number) => {
     try {
-      await fetch(`http://localhost:3000/api/tasks/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/tasks/${id}`, {
         method: "DELETE",
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       setTasks(tasks.filter((t) => t.id !== id));
     } catch (error) {
       console.error("Error deleting task:", error);
