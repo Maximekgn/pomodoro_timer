@@ -3,6 +3,10 @@ import ViteExpress from "vite-express";
 import cors from "cors";
 import fs from "fs/promises";
 import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface Task {
   id: number;
@@ -12,6 +16,7 @@ interface Task {
 
 const app = express();
 const TASKS_FILE = "tasks.json";
+const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(express.json());
 // Configure CORS for all origins in production
@@ -21,6 +26,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type'],
   credentials: true
 }));
+
+// Serve static files in production
+if (isProduction) {
+  const distPath = path.join(__dirname, '../..', 'dist');
+  app.use(express.static(distPath));
+}
 
 // Helper function to read tasks
 async function readTasks(): Promise<Task[]> {
@@ -104,6 +115,13 @@ app.delete("/api/tasks/:id", async (req, res) => {
     res.status(500).json({ error: "Error deleting task" });
   }
 });
+
+// Serve index.html for all other routes in production
+if (isProduction) {
+  app.get('*', (_, res) => {
+    res.sendFile(path.join(__dirname, '../..', 'dist', 'index.html'));
+  });
+}
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 

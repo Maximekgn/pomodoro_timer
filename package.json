@@ -7,7 +7,7 @@
     "dev": "nodemon -w src/server -x tsx src/server/main.ts",
     "start": "cross-env NODE_ENV=production tsx src/server/main.ts",
     "build": "vite build",
-    "vercel-build": "vite build && cp dist/index.html dist/404.html"
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@types/cors": "^2.8.17",
